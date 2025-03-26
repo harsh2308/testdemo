@@ -32,9 +32,11 @@ Test the inventory system quickly using the CLI:
     python commands.py
     ```
 2. Once the script is running, use the following commands:
+    ```
     add – Add a new product to the inventory.
     list – List all products in the inventory.
     exit – Exit the application.
+    ```
 
     ## Example
     ```
