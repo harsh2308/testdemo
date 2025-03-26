@@ -3,12 +3,9 @@ from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, QH
                              QTableWidget, QTableWidgetItem, QPushButton, QLineEdit, 
                              QComboBox, QLabel, QMessageBox)
 from PyQt6.QtCore import Qt
-from inventory import Inventory, ProductFactory, Category
+from models.inventory import Inventory, ProductFactory, Category
 
 class InventoryGUI(QMainWindow):
-    """
-    Main window for the inventory management system using PyQt6.
-    """
     def __init__(self):
         super().__init__()
         self.inventory = Inventory()
@@ -22,12 +19,26 @@ class InventoryGUI(QMainWindow):
         self.setCentralWidget(central_widget)
         main_layout = QVBoxLayout(central_widget)
 
+        # Add filter section
+        filter_layout = QHBoxLayout()
+        filter_label = QLabel("Filter by Category:")
+        self.filter_combo = QComboBox()
+        self.filter_combo.addItem("All Categories")  # Add "All" option
+        self.filter_combo.addItems([cat.name for cat in self.categories])
+        self.filter_combo.currentTextChanged.connect(self.apply_filter)
+        filter_layout.addWidget(filter_label)
+        filter_layout.addWidget(self.filter_combo)
+        filter_layout.addStretch()
+        main_layout.addLayout(filter_layout)
+
+        # Table setup
         self.table = QTableWidget(0, 5)
         self.table.setHorizontalHeaderLabels(["SKU", "Name", "Price ($)", "Category", "Quantity"])
         self.table.horizontalHeader().setStretchLastSection(True)
         main_layout.addWidget(self.table)
         self.refresh_table()
 
+        # Form setup
         form_widget = QWidget()
         form_layout = QVBoxLayout(form_widget)
         
@@ -69,11 +80,15 @@ class InventoryGUI(QMainWindow):
         main_layout.addWidget(form_widget)
 
     def refresh_table(self):
-        """
-        Refresh the product table.
-        """
         self.table.setRowCount(0)
-        for product in self.inventory.get_all_products():
+        current_filter = self.filter_combo.currentText()
+        products = self.inventory.get_all_products()
+
+        # Apply filter if not showing all categories
+        if current_filter != "All Categories":
+            products = [p for p in products if p.category.name == current_filter]
+
+        for product in products:
             row = self.table.rowCount()
             self.table.insertRow(row)
             self.table.setItem(row, 0, QTableWidgetItem(product.sku))
@@ -82,10 +97,10 @@ class InventoryGUI(QMainWindow):
             self.table.setItem(row, 3, QTableWidgetItem(product.category.name))
             self.table.setItem(row, 4, QTableWidgetItem(str(product.quantity)))
 
+    def apply_filter(self):
+        self.refresh_table()
+
     def add_product(self):
-        """
-        Add a new product to the inventory with explicit validation.
-        """
         sku = self.sku_input.text().strip()
         name = self.name_input.text().strip()
         price_str = self.price_input.text().strip()
@@ -119,9 +134,6 @@ class InventoryGUI(QMainWindow):
         self.clear_inputs()
 
     def remove_product(self):
-        """
-        Remove a selected product from the inventory with validation.
-        """
         selected = self.table.currentRow()
         if selected == -1:
             QMessageBox.warning(self, "Warning", "Please select a product to remove")
@@ -136,9 +148,6 @@ class InventoryGUI(QMainWindow):
         self.refresh_table()
 
     def update_quantity(self):
-        """
-        Update the quantity of a selected product with validation.
-        """
         selected = self.table.currentRow()
         if selected == -1:
             QMessageBox.warning(self, "Warning", "Please select a product to update")
@@ -158,9 +167,6 @@ class InventoryGUI(QMainWindow):
         self.clear_inputs()
 
     def update_price(self):
-        """
-        Update the price of a selected product with validation.
-        """
         selected = self.table.currentRow()
         if selected == -1:
             QMessageBox.warning(self, "Warning", "Please select a product to update")
@@ -180,9 +186,6 @@ class InventoryGUI(QMainWindow):
         self.clear_inputs()
 
     def clear_inputs(self):
-        """
-        Clear all input fields.
-        """
         self.sku_input.clear()
         self.name_input.clear()
         self.price_input.clear()
